@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau de Bord CMU</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; }
+    h5, h6 { font-size: 14px; }
+    .stats-section, .graph-section {
+      background-color: #f1f1f1;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    .stats-card {
+      background: white;
+      padding: 12px;
+      width: 300px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stats-icon { font-size: 24px; margin-bottom: 6px; display: block; }
+    .stats-value { font-size: 32px; font-weight: bold; }
+    .chart-box, .definition-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .chart-split { width: 47%; }
+    .definition-box h6 { font-size: 20px; }
+    .definition-box p { text-align: left; }
+    table th, table td { font-size: 13px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+
+<!-- 🧭 Titre principal AVEC LOGO intégré -->
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-end">
+    <div class="d-flex align-items-end" style="gap:18px;">
+      <img src="Logo.png" alt="Logo CNAM" style="height:60px;"/>
+      <div>
+        <h2 class="fw-bold text-primary" style="color: #1a237e; font-size: 20px; margin-bottom: 6px;">
+          TABLEAU DE BORD - SUIVI DES INCIDENTS DES GROUPES WHATSAPP
+        </h2>
+        <p style="color: #495057; font-size: 16px; margin-bottom: 0;">
+          Analyse des incidents et réclamations signalés dans les groupes WhatsApp
+        </p>
+      </div>
+    </div>
+    <div>
+      <button id="logoutBtn" class="btn btn-outline-danger btn-sm">🔓 Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🗂️ Onglets -->
+<div class="container">
+  <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="analyse-tab" data-bs-toggle="tab" data-bs-target="#analyse" type="button" role="tab">Analyse des incidents</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="detail-tab" data-bs-toggle="tab" data-bs-target="#detail" type="button" role="tab">Détail des incidents</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="dashboardTabsContent">
+    <!-- Onglet Analyse -->
+    <div class="tab-pane fade show active" id="analyse" role="tabpanel" aria-labelledby="analyse-tab">
+
+      <!-- 📊 Chiffres clés -->
+      <div class="stats-section d-flex  justify-content-center gap-4">
+        <div class="stats-card"><i class="bi bi-exclamation-circle text-danger stats-icon"></i><strong style="font-size:14px;">Total incidents</strong><br><span class="stats-value" id="totalIncidents">0</span></div>
+        <div class="stats-card"><i class="bi bi-check-circle text-success stats-icon"></i><strong style="font-size:14px;">Résolus</strong><br><span class="stats-value" id="resolvedIncidents">0</span></div>
+        <div class="stats-card"><i class="bi bi-x-circle text-danger stats-icon"></i><strong style="font-size:14px;">Non résolus</strong><br><span class="stats-value" id="unresolvedIncidents">0</span></div>
+        <div class="stats-card"><i class="bi bi-graph-up text-primary stats-icon"></i><strong style="font-size:14px;">Taux de résolution</strong><br><span class="stats-value" id="resolutionRate">0%</span></div>
+        <div class="stats-card"><i class="bi bi-person-lines-fill text-secondary stats-icon"></i><strong style="font-size:14px;">Déclarants</strong><br><span class="stats-value" id="reporters">0</span></div>
+        <div class="stats-card"><i class="bi bi-geo-alt-fill text-warning stats-icon"></i><strong style="font-size:14px;">Régions identifiées</strong><br><span class="stats-value" id="regions">0</span></div>
+      </div>
+      <!-- 📈 Évolution journalière -->
+      <div class="chart-box mb-4">
+        <h5>Évolution journalière du nombre d’incident (7 derniers jours)</h5>
+        <canvas id="dailyTrendChart" height="221"></canvas>
+      </div>
+
+      <!-- 🥧 + 📊 Catégorie & Urgence -->
+      <div class="graph-section d-flex justify-content-between ">
+        <div class="chart-box chart-split">
+          <h6>Nombre d'incidents par catégorie</h6>
+          <canvas id="categoryChart" height="265"></canvas>
+        </div>
+        <div class="chart-box chart-split">
+          <h6>Nombre d'incidents selon l'urgence</h6>
+          <canvas id="urgencyChart" height="265"></canvas>
+        </div>
+      </div>
+
+      <!-- 🏢 Coordination/activité -->
+      <div class="chart-box">
+        <h6>Nombre d'incidents par coordination/activité</h6>
+        <canvas id="coordinationChart" height="265"></canvas>
+      </div>
+
+      <!-- 📖 Définitions -->
+      <div class="definition-box">
+        <h6>Définition des termes</h6>
+        <p><strong>Incident résolu :</strong> Un incident est considéré comme résolu si une réponse explicite contenant \"résolu\", \"traité\", \"réglé\" est trouvée.
+          <br><em>Ex : Problème réglé par le responsable du centre.</em></p>
+        <p><strong>Incident urgent :</strong> Jugé critique, implique une interruption ou danger immédiat.
+          <br><em>Ex : Centre fermé depuis 3 jours, aucun accueil.</em></p>
+      </div>
+    </div> <!-- fin onglet analyse -->
+    <!-- 📋 Onglet Détail des incidents -->
+    <div class="tab-pane fade" id="detail" role="tabpanel" aria-labelledby="detail-tab">
+
+      <!-- 🧩 Carte de filtres -->
+      <div class="p-3 mb-4" style="background-color: #f1f1f1; border-radius: 8px;">
+        <h6 class="mb-3"><i class="bi bi-funnel-fill me-2"></i>Filtres personnalisés</h6>
+        <div class="row">
+          <div class="col-md-4 mb-2">
+            <label for="filterStatus" class="form-label">Filtrer par statut</label>
+            <select id="filterStatus" class="form-select">
+              <option value="">Tous les statuts</option>
+              <option value="Nouveau">Nouveau</option>
+              <option value="En cours">En cours</option>
+              <option value="Résolu">Résolu</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-2">
+            <label for="filterUrgence" class="form-label">Filtrer par urgence</label>
+            <select id="filterUrgence" class="form-select">
+              <option value="">Toutes urgences</option>
+              <option value="Élevé">Élevé</option>
+              <option value="Moyen">Moyen</option>
+              <option value="Bas">Bas</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-2">
+            <label for="filterCoord" class="form-label">Filtrer par coordination</label>
+            <select id="filterCoord" class="form-select">
+              <option value="">Toutes coordinations</option>
+              <!-- Ajout dynamique via JS -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 📋 Tableau -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover nowrap" id="incidentTable" style="width:100%">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th style="min-width: 400px; width: 60%;" class="text-start">Message</th>
+              <th>Catégorie</th>
+              <th>Auteur</th>
+              <th>Coordination</th>
+              <th>Urgence</th>
+              <th>Statut</th>
+              <th>Résolu par ?</th>
+              <th>Action réalisée</th>
+            </tr>
+          </thead>
+          <tbody id="incidentTableBody">
+            <!-- Données dynamiques ici -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 📥 Boutons d'export -->
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-outline-primary btn-sm">Exporter Excel</button>
+        <button class="btn btn-outline-secondary btn-sm">Exporter PDF</button>
+      </div>
+    </div> <!-- fin onglet détail -->
+
+  </div> <!-- fin des tab-content -->
+</div> <!-- fin du container -->
+
+<!-- 📚 Librairies JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- ⚙️ Fonctionnalités export + filtres -->
+<script>
+  $(document).ready(function () {
+    const table = $('#incidentTable').DataTable({
+      pageLength: 10,
+      order: [[0, 'desc']],
+      language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json' }
+    });
+
+    // Filtres personnalisés
+    $('#filterStatus').on('change', function () {
+      table.column(6).search(this.value).draw();
+    });
+    $('#filterUrgence').on('change', function () {
+      table.column(5).search(this.value).draw();
+    });
+    $('#filterCoord').on('change', function () {
+      table.column(4).search(this.value).draw();
+    });
+
+    // Coordination auto
+    const coordSet = new Set();
+    table.column(4).data().each(function (val) {
+      if (val && !coordSet.has(val)) {
+        coordSet.add(val);
+        $('#filterCoord').append(`<option value=\"${val}\">${val}</option>`);
+      }
+    });
+
+    // Export Excel
+    $('.btn-outline-primary').click(function () {
+      const wb = XLSX.utils.table_to_book($('#incidentTable')[0], { sheet: \"Incidents\" });
+      XLSX.writeFile(wb, `export_incidents_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    });
+
+    // Export PDF
+    $('.btn-outline-secondary').click(function () {
+      html2pdf().set({
+        margin: 0.5,
+        filename: `export_incidents_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+      }).from($('#incidentTable')[0]).save();
+    });
+  });
+</script>
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', function () {
+    localStorage.removeItem('cnam_role');
+    window.location.href = 'index.html';
+  });
+</script>
+
+<div id="adminBottomUpload" class="container text-center my-4" style="display: none;">
+  <hr />
+  <h5 class="mb-3">📂 Charger un fichier .zip WhatsApp (admin uniquement)</h5>
+  
+
+<div id="zipLoadingSpinner" class="text-center my-3" style="display: none;">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Chargement...</span>
+  </div>
+  <div class="mt-2 text-primary fw-bold">Traitement du fichier...</div>
+</div>
+
+<div id="zipUploadSuccess" class="text-center text-success fw-bold my-3" style="display: none;">
+  ✅ Fichier chargé avec succès.
+</div>
+
+  <input type="file" id="zipInput" accept=".zip" class="form-control w-50 mx-auto" />
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+// Script IA enrichi pour remplir aussi un tableau HTML à partir du JSON GPT
+document.getElementById("zipInput")?.addEventListener("change", async function (e) {
+  const file = e.target.files[0];
+  const msgSuccess = document.getElementById("zipUploadSuccess");
+  const spinner = document.getElementById("zipLoadingSpinner");
+
+  if (!file || !file.name.endsWith(".zip")) {
+    alert("❌ Veuillez sélectionner un fichier .zip valide.");
+    return;
+  }
+
+  spinner.style.display = "block";
+  msgSuccess.style.display = "none";
+
+  const reader = new FileReader();
+  reader.onload = async function () {
+    const base64Zip = reader.result.split(",")[1];
+
+    try {
+      const response = await fetch("/.netlify/functions/analyse-ia-gpt-netlify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zip: base64Zip })
+      });
+
+      const result = await response.json();
+
+      if (result.incidents) {
+        const parsed = JSON.parse(result.incidents);
+
+        // Injection dans les cartes
+        document.getElementById("totalIncidents").textContent = parsed.length;
+        document.getElementById("resolvedIncidents").textContent = parsed.filter(i => i.statut === "Résolu").length;
+        document.getElementById("unresolvedIncidents").textContent = parsed.filter(i => i.statut !== "Résolu").length;
+
+        const taux = Math.round(parsed.filter(i => i.statut === "Résolu").length / parsed.length * 100);
+        document.getElementById("resolutionRate").textContent = taux + "%";
+
+        document.getElementById("reporters").textContent = new Set(parsed.map(i => i.auteur)).size;
+        document.getElementById("regions").textContent = new Set(parsed.map(i => i.coordination)).size;
+
+        // Injection dans tableau DataTable s'il existe
+        const tbody = document.querySelector("#incidentDetails tbody");
+        if (tbody) {
+          tbody.innerHTML = "";
+          parsed.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${row.date}</td>
+              <td class="text-start">${row.message}</td>
+              <td>${row.categorie}</td>
+              <td>${row.auteur}</td>
+              <td>${row.coordination}</td>
+              <td><span class="badge ${row.urgence === 'Élevé' ? 'bg-danger' : row.urgence === 'Moyen' ? 'bg-warning text-dark' : 'bg-success'}">${row.urgence}</span></td>
+              <td><span class="badge ${row.statut === 'Résolu' ? 'bg-success' : row.statut === 'En cours' ? 'bg-warning text-dark' : 'bg-danger'}">${row.statut}</span></td>
+              <td>${row.resolu_par}</td>
+              <td>${row.action}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
+        spinner.style.display = "none";
+        msgSuccess.style.display = "block";
+      } else {
+        throw new Error("Réponse GPT invalide.");
+      }
+    } catch (error) {
+      console.error("Erreur IA:", error);
+      spinner.style.display = "none";
+      alert("❌ Analyse impossible. Veuillez réessayer.");
+    }
+  };
+
+  reader.readAsDataURL(file);
+});
+
+
+// Fonction d’enregistrement déclenchée après analyse GPT (réservé admin)
+async function saveIncidentsToServer(incidents) {
+  try {
+    const response = await fetch("/.netlify/functions/save-incidents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(incidents)
+    });
+    const txt = await response.text();
+    console.log("🔐 Enregistrement incidents :", txt);
+  } catch (err) {
+    console.error("Erreur enregistrement incidents :", err);
+  }
+}
+
+// Fonction de chargement des incidents au démarrage (pour tous)
+async function loadIncidentsFromServer() {
+  try {
+    const response = await fetch("/.netlify/functions/get-incidents");
+    const incidents = await response.json();
+
+    if (!Array.isArray(incidents) || incidents.length === 0) return;
+
+    // Injecte dans cartes
+    document.getElementById("totalIncidents").textContent = incidents.length;
+    document.getElementById("resolvedIncidents").textContent = incidents.filter(i => i.statut === "Résolu").length;
+    document.getElementById("unresolvedIncidents").textContent = incidents.filter(i => i.statut !== "Résolu").length;
+
+    const taux = Math.round(incidents.filter(i => i.statut === "Résolu").length / incidents.length * 100);
+    document.getElementById("resolutionRate").textContent = taux + "%";
+
+    document.getElementById("reporters").textContent = new Set(incidents.map(i => i.auteur)).size;
+    document.getElementById("regions").textContent = new Set(incidents.map(i => i.coordination)).size;
+
+    // Injecte dans tableau si présent
+    const tbody = document.querySelector("#incidentDetails tbody");
+    if (tbody) {
+      tbody.innerHTML = "";
+      incidents.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.date}</td>
+          <td class="text-start">${row.message}</td>
+          <td>${row.categorie}</td>
+          <td>${row.auteur}</td>
+          <td>${row.coordination}</td>
+          <td><span class="badge ${row.urgence === 'Élevé' ? 'bg-danger' : row.urgence === 'Moyen' ? 'bg-warning text-dark' : 'bg-success'}">${row.urgence}</span></td>
+          <td><span class="badge ${row.statut === 'Résolu' ? 'bg-success' : row.statut === 'En cours' ? 'bg-warning text-dark' : 'bg-danger'}">${row.statut}</span></td>
+          <td>${row.resolu_par}</td>
+          <td>${row.action}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  } catch (err) {
+    console.warn("ℹ️ Aucun incident disponible ou erreur de chargement :", err.message);
+  }
+}
+
+// Appelle automatique au démarrage
+window.addEventListener("DOMContentLoaded", () => {
+  loadIncidentsFromServer();
+});
+
+</script>
+
+<script>
+  const role = localStorage.getItem("cnam_role");
+  const zipZone = document.getElementById("adminBottomUpload");
+  if (zipZone && role === "admin") {
+    zipZone.style.display = "block";
+  }
+</script>
+</body>
+
+</html>
