@@ -47,10 +47,10 @@ document.getElementById("loginBtn").addEventListener("click", function () {
 
   if (user === "whatsapp_admin_cnam" && pass === "cnam_admin_1234") {
   localStorage.setItem("cnam_role", "admin");
-  window.location.href = "upload.html"; // ✅ Redirige vers l'import ZIP
+  window.location.href = "dashboard.html"; // ✅ Redirige vers l'import ZIP
 } else if (user === "whatsapp_user_cnam" && pass === "cnam_user_1234") {
   localStorage.setItem("cnam_role", "user");
-  window.location.href = "upload.html"; // ✅ Redirige aussi vers import ZIP
+  window.location.href = "dashboard.html"; // ✅ Redirige aussi vers import ZIP
 } else {
     message.textContent = "Identifiants incorrects.";
   }
